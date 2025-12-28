@@ -69,6 +69,3 @@ def measure_performance(model, x, device):
         peak_mem = torch.cuda.max_memory_allocated() / (1024**2)
 
     return elapsed, peak_mem, output
-
-
-# --- 3. ANA KARŞILAŞTIRMA TESTİ ---

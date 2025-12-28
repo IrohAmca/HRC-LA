@@ -5,7 +5,6 @@ import pytest
 import torch
 import torch.nn as nn
 
-# Add the root directory to sys.path to import hrc_la
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from hrc_la import HRCMultiheadAttention
@@ -63,7 +62,7 @@ def test_approximation_accuracy(N):
     """Test if the approximation error is within a reasonable range compared to standard MHA."""
     D_MODEL = 64
     NUM_HEADS = 4
-    M_FEATURES = 1024 # Higher features for better approximation in tests
+    M_FEATURES = 1024
     
     std_model_raw = nn.MultiheadAttention(D_MODEL, NUM_HEADS, batch_first=True)
     hrc_model = HRCMultiheadAttention(D_MODEL, NUM_HEADS, m_features=M_FEATURES, batch_first=True)
