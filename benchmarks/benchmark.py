@@ -18,7 +18,7 @@ def run_ultimate_benchmark():
     D_MODEL = 64
     NUM_HEADS = 4
     M_FEATURES = 256
-    SEQ_LENGTHS = [128, 256, 512, 1024, 2048, 4096, 8192, 16384] 
+    SEQ_LENGTHS = [128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768] 
     
     # Initialize models
     std_model_raw = nn.MultiheadAttention(D_MODEL, NUM_HEADS, batch_first=True).to(device)

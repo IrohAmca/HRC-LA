@@ -12,6 +12,7 @@ This repository provides a clean and efficient implementation of the HRC-LA mech
 
 - **Linear Complexity**: Scales linearly with sequence length $N$.
 - **Hybrid Real-Complex Mapping**: Utilizes Euler's formula to map real-valued queries and keys into a complex feature space.
+- **Orthogonal Random Features**: Uses orthogonal matrix initialization for random features to stabilize variance and improve approximation quality.
 - **PyTorch Implementation**: Fully compatible with standard PyTorch modules.
 
 ## Benchmark Results
@@ -22,14 +23,15 @@ The following benchmark compares the standard $O(N^2)$ Multihead Attention with 
 
 | Sequence Length (N) | Standard Time (s) | HRC-LA Time (s) | MSE Error |
 |---------------------|-------------------|-----------------|-----------|
-| 128                 | Fail              | 0.0010          | 0.000403  |
-| 256                 | 0.0010            | 0.0045          | 0.019830  |
-| 512                 | 0.0020            | 0.0075          | 0.000251  |
-| 1024                | 0.0095            | 0.0136          | 0.000162  |
-| 2048                | 0.0415            | 0.0240          | 0.000136  |
-| 4096                | 0.1544            | 0.0466          | 0.001259  |
-| 8192                | 0.5579            | 0.0978          | 0.000288  |
-| 16384               | 2.2606            | 0.1675          | 0.002028  |
+| 128                 | 0.0015            | 0.0055          | 0.002383  |
+| 256                 | Fail              | 0.0076          | 0.000740  |
+| 512                 | 0.0025            | 0.0121          | 0.001041  |
+| 1024                | 0.0075            | 0.0249          | 0.007950  |
+| 2048                | 0.0341            | 0.0431          | 0.907808  |
+| 4096                | 0.1460            | 0.1255          | 0.004921  |
+| 8192                | 0.4416            | 0.1693          | 0.002242  |
+| 16384               | 2.3723            | 0.3558          | 0.051956  |
+| 32768               | 10.3643           | 0.8442          | 0.050090  |
 
 ### Visualization
 
