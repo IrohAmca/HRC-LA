@@ -8,13 +8,15 @@ logger = logging.getLogger(__name__)
 
 
 class HRCMultiheadAttention(nn.Module):
-    def __init__(self, d_model, num_heads, m_features=256, batch_first=True):
+    def __init__(self, d_model, num_heads, m_features=256, batch_first=True, learnable_omega=False, learnable_omega_penalty=0.01):
         super().__init__()
         self.d_model = d_model
         self.num_heads = num_heads
         self.m = m_features
         self.head_dim = d_model // num_heads
         self.batch_first = batch_first
+        self.learnable_omega = learnable_omega
+        self.learnable_omega_penalty = learnable_omega_penalty
 
         assert d_model % num_heads == 0, "d_model must be divisible by num_heads"
 
@@ -25,8 +27,11 @@ class HRCMultiheadAttention(nn.Module):
 
         self._reset_parameters()
 
-        omega = self._create_orthogonal_matrix(self.num_heads, self.m, self.head_dim)
-        self.register_buffer("omega", omega)
+        if not self.learnable_omega:
+            omega = self._create_orthogonal_matrix(self.num_heads, self.m, self.head_dim)
+            self.register_buffer("omega", omega)
+        else:
+            self.omega = nn.Parameter(torch.randn(self.num_heads, self.m, self.head_dim))
 
     def _create_orthogonal_matrix(self, num_heads, m_features, head_dim):
         """
@@ -126,6 +131,15 @@ class HRCMultiheadAttention(nn.Module):
         k = k / scale_factor
 
         # Phase Calculation (Theta)
+        if self.learnable_omega:
+            omega_t = self.omega.transpose(-1, -2)  # (num_heads, head_dim, m_features)
+            ortho_product = torch.matmul(omega_t, self.omega)  # (num_heads, head_dim, head_dim)
+            identity = torch.eye(self.head_dim, device=self.omega.device)
+            omega_penalty = ortho_product - identity.unsqueeze(0)
+            self.ortho_loss = self.learnable_omega_penalty * torch.mean(omega_penalty**2)
+        else:
+            self.ortho_loss = 0
+        
         theta_q = torch.matmul(q, self.omega.transpose(-1, -2))
         theta_k = torch.matmul(k, self.omega.transpose(-1, -2))
 
@@ -160,3 +174,4 @@ class HRCMultiheadAttention(nn.Module):
             output = output.transpose(0, 1)
 
         return output
+
