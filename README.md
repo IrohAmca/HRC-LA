@@ -17,25 +17,27 @@ This repository provides a clean and efficient implementation of the HRC-LA mech
 
 ## Benchmark Results
 
-The following benchmark compares the standard $O(N^2)$ Multihead Attention with our HRC-LA $O(N)$ implementation.
+The following benchmark compares the standard $O(N^2)$ Multihead Attention with our HRC-LA $O(N)$ implementation (both Fixed and Learnable $\Omega$ variants).
 
-### Performance Comparison
+### Performance Comparison (RTX 4060 Laptop GPU)
 
-| Sequence Length (N) | Standard Time (s) | HRC-LA Time (s) | MSE Error |
-|---------------------|-------------------|-----------------|-----------|
-| 128                 | 0.0015            | 0.0055          | 0.002383  |
-| 256                 | Fail              | 0.0076          | 0.000740  |
-| 512                 | 0.0025            | 0.0121          | 0.001041  |
-| 1024                | 0.0075            | 0.0249          | 0.007950  |
-| 2048                | 0.0341            | 0.0431          | 0.907808  |
-| 4096                | 0.1460            | 0.1255          | 0.004921  |
-| 8192                | 0.4416            | 0.1693          | 0.002242  |
-| 16384               | 2.3723            | 0.3558          | 0.051956  |
-| 32768               | 10.3643           | 0.8442          | 0.050090  |
+| Sequence Length (N) | Standard Time (s) | HRC-LA (Learnable) Time (s) | Speedup        | Standard Mem (MB) | HRC-LA Mem (MB) | Memory Saving | MSE (Learnable) |
+| ------------------- | ----------------- | --------------------------- | -------------- | ----------------- | --------------- | ------------- | --------------- |
+| 1024                | 0.0015            | 0.0035                      | 0.4x           | 31.19             | 50.34           | -61%          | 0.001650        |
+| 2048                | 0.0061            | 0.0038                      | **1.6x** | 93.19             | 77.09           | **17%** | 0.000448        |
+| 4096                | 0.0205            | 0.0070                      | **2.9x** | 336.94            | 144.58          | **57%** | 0.000323        |
+| 8192                | 0.0783            | 0.0143                      | **5.5x** | 1304.44           | 279.70          | **78%** | 0.017169        |
+| 16384               | 7.3582            | 0.0256                      | **287x** | 5159.44           | 549.95          | **89%** | 0.003315        |
+
+### Key Findings
+
+1. **Crossover Point**: HRC-LA becomes faster and more memory-efficient than standard attention at sequence lengths around **N=2048**.
+2. **Extreme Scaling**: At **N=16,384**, HRC-LA is **~287x faster** and uses **~10x less memory**.
+3. **Learnable vs Fixed**: The Learnable $\Omega$ variant significantly reduces approximation error (MSE) compared to the fixed variant, especially at longer sequence lengths (e.g., at N=16k, MSE drops from ~16.0 to ~0.003).
 
 ### Visualization
 
-![Benchmark Results](results.png)
+![Benchmark Results](benchmark_results.png)
 
 The plot above demonstrates the linear scaling of HRC-LA compared to the quadratic scaling of standard attention, while maintaining a very low approximation error (MSE).
 
@@ -48,10 +50,10 @@ HRC-LA/
 │   └── utils.py           # Helper functions and adapters
 ├── benchmarks/            # Performance and error analysis
 │   ├── benchmark.py       # Main benchmark script
-│   └── decomposition.py   # Step-by-step implementation analysis
-├── tests/                 # Unit tests
+├── tests/                 # Unit tests & Scenarios
+│   ├── scenarios/         # Task-specific benchmarks (Copy Task, etc.)
 │   └── test_attention.py  # Attention mechanism tests
-├── results.png            # Benchmark visualization
+├── benchmark_results.png  # Benchmark visualization
 ├── pyproject.toml         # Project dependencies
 └── README.md              # Documentation
 ```
@@ -62,11 +64,19 @@ HRC-LA/
 import torch
 from hrc_la import HRCMultiheadAttention
 
-# Initialize model
+# Initialize model (Standard Fixed Omega)
 model = HRCMultiheadAttention(
     d_model=64, 
     num_heads=4, 
     m_features=256
+)
+
+# Initialize model with Learnable Omega (Higher Accuracy)
+model_learnable = HRCMultiheadAttention(
+    d_model=64, 
+    num_heads=4, 
+    m_features=256,
+    learnable_omega=True
 )
 
 # Forward pass

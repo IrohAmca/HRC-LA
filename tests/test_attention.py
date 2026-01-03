@@ -15,7 +15,7 @@ def test_output_shape():
     """Test if the output shape matches the input shape for various sequence lengths."""
     D_MODEL = 64
     NUM_HEADS = 4
-    SEQ_LENGTHS = [128, 512, 1024]
+    SEQ_LENGTHS = [512, 1024, 2048]
     
     model = HRCMultiheadAttention(D_MODEL, NUM_HEADS)
     
@@ -57,15 +57,29 @@ def test_divisibility_error():
     with pytest.raises(AssertionError):
         HRCMultiheadAttention(d_model=64, num_heads=5)
 
-@pytest.mark.parametrize("N", [128, 512, 1024])
+@pytest.mark.parametrize("learnable", [False, True])
+def test_omega_type(learnable):
+    """Test if omega is registered correctly as buffer or parameter."""
+    model = HRCMultiheadAttention(d_model=64, num_heads=4, learnable_omega=learnable)
+    
+    if learnable:
+        assert isinstance(model.omega, nn.Parameter)
+        assert model.omega.requires_grad
+    else:
+        assert isinstance(model.omega, torch.Tensor)
+        assert not isinstance(model.omega, nn.Parameter)
+        # Buffers are not in model.parameters()
+        assert "omega" in dict(model.named_buffers())
+
+@pytest.mark.parametrize("N", [512, 1024, 2048])
 def test_approximation_accuracy(N):
     """Test if the approximation error is within a reasonable range compared to standard MHA."""
     D_MODEL = 64
     NUM_HEADS = 4
-    M_FEATURES = 1024
+    M_FEATURES = 128
     
     std_model_raw = nn.MultiheadAttention(D_MODEL, NUM_HEADS, batch_first=True)
-    hrc_model = HRCMultiheadAttention(D_MODEL, NUM_HEADS, m_features=M_FEATURES, batch_first=True)
+    hrc_model = HRCMultiheadAttention(D_MODEL, NUM_HEADS, m_features=M_FEATURES, batch_first=True, learnable_omega=False)
     
     sync_weights(std_model_raw, hrc_model)
     std_model = StandardAdapter(std_model_raw)
