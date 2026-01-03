@@ -132,8 +132,9 @@ class HRCMultiheadAttention(nn.Module):
 
         # Phase Calculation (Theta)
         if self.learnable_omega:
+            view_omega = self.omega.view(self.num_heads, self.head_dim, self.m).transpose(1, 2)
             omega_t = self.omega.transpose(-1, -2)  # (num_heads, head_dim, m_features)
-            ortho_product = torch.matmul(omega_t, self.omega)  # (num_heads, head_dim, head_dim)
+            ortho_product = torch.matmul(omega_t, view_omega)  # (num_heads, head_dim, head_dim)
             identity = torch.eye(self.head_dim, device=self.omega.device)
             omega_penalty = ortho_product - identity.unsqueeze(0)
             self.ortho_loss = self.learnable_omega_penalty * torch.mean(omega_penalty**2)
