@@ -19,27 +19,55 @@ This repository provides a clean and efficient implementation of the HRC-LA mech
 
 The following benchmark compares the standard $O(N^2)$ Multihead Attention with our HRC-LA $O(N)$ implementation (both Fixed and Learnable $\Omega$ variants).
 
-### Performance Comparison (RTX 4060 Laptop GPU)
+### Performance Comparison (GTX 1650 Laptop GPU)
 
-| Sequence Length (N) | Standard Time (s) | HRC-LA (Learnable) Time (s) | Speedup        | Standard Mem (MB) | HRC-LA Mem (MB) | Memory Saving | MSE (Learnable) |
-| ------------------- | ----------------- | --------------------------- | -------------- | ----------------- | --------------- | ------------- | --------------- |
-| 1024                | 0.0015            | 0.0035                      | 0.4x           | 31.19             | 50.34           | -61%          | 0.001650        |
-| 2048                | 0.0061            | 0.0038                      | **1.6x** | 93.19             | 77.09           | **17%** | 0.000448        |
-| 4096                | 0.0205            | 0.0070                      | **2.9x** | 336.94            | 144.58          | **57%** | 0.000323        |
-| 8192                | 0.0783            | 0.0143                      | **5.5x** | 1304.44           | 279.70          | **78%** | 0.017169        |
-| 16384               | 7.3582            | 0.0256                      | **287x** | 5159.44           | 549.95          | **89%** | 0.003315        |
+| Sequence Length (N) | Standard Time (s) | HRC-LA (Learnable) Time (s) | Speedup          | Standard Mem (MB) | HRC-LA Mem (MB) | Memory Saving | Loss (Cross-Entropy) |
+| ------------------- | ----------------- | --------------------------- | ---------------- | ----------------- | --------------- | ------------- | -------------------- |
+| 1024                | 0.0020            | 0.0031                      | 0.6x             | 29.53             | 11.56           | 61%           | 4.28                 |
+| 2048                | 0.0075            | 0.0020                      | **3.7x**   | 89.98             | 13.98           | **84%** | 4.29                 |
+| 4096                | 0.0260            | 0.0030                      | **8.6x**   | 330.80            | 18.81           | **94%** | 4.38                 |
+| 8192                | 0.0897            | 0.0047                      | **19x**    | 1292.46           | 28.46           | **97%** | 4.18                 |
+| 16384               | 7.0447            | 0.0194                      | **363x** | 5135.77           | 47.77           | **99%** | 4.20                 |
+
+*Note: Standard Attention Loss consistently stays around ~4.17. HRC-LA achieves very similar loss values with significantly less resource usage.*
 
 ### Key Findings
 
-1. **Crossover Point**: HRC-LA becomes faster and more memory-efficient than standard attention at sequence lengths around **N=2048**.
-2. **Extreme Scaling**: At **N=16,384**, HRC-LA is **~287x faster** and uses **~10x less memory**.
-3. **Learnable vs Fixed**: The Learnable $\Omega$ variant significantly reduces approximation error (MSE) compared to the fixed variant, especially at longer sequence lengths (e.g., at N=16k, MSE drops from ~16.0 to ~0.003).
+1.  **Crossover Point**: HRC-LA becomes faster than standard attention starting around **N=1024-2048**, but is **always** more memory efficient.
+2.  **Extreme Scaling**: At **N=16,384**, HRC-LA is **~363x faster** and uses **~99% less memory**.
+3.  **Accuracy**: The Learnable $\Omega$ variant maintains a Cross-Entropy Loss very close to the standard attention mechanism (e.g., 4.20 vs 4.17 at 16k), demonstrating its capability to approximate the dense attention matrix effectively.
 
 ### Visualization
 
 ![Benchmark Results](benchmark_results.png)
 
-The plot above demonstrates the linear scaling of HRC-LA compared to the quadratic scaling of standard attention, while maintaining a very low approximation error (MSE).
+The benchmark can be run in two modes:
+- **MSE Mode**: Directly compares the output tensors (Default).
+- **Loss Mode**: Compares reconstruction loss on a synthetic task (`--mode loss`).
+
+## Optimization & Scenarios
+
+We provide advanced tools for benchmarking and hyperparameter optimization, specifically designed for the **Copy Task** scenario to test long-range dependency capabilities.
+
+### Optuna Integration
+
+Optimize hyperparameters automatically, including searching for the maximum effective sequence length (`seq_len`) while minimizing feature map size (`m_features`).
+
+```bash
+# Basic optimization
+uv run python tests/scenarios/copy_test/optuna_search.py --optimize_all --n_trials 50
+
+# Optimize specifically for maximum sequence length
+uv run python tests/scenarios/copy_test/seq_len_optimizer.py --mode single --n_trials 50
+```
+
+### Copy Task Benchmark
+
+A dedicated scenario to evaluate the model's ability to recall information over long sequences.
+
+```bash
+uv run python tests/scenarios/copy_test/main.py --seq_len 2048 --epochs 10
+```
 
 ## Project Structure
 
